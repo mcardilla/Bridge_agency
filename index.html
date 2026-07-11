@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Videollamada Privada</title>
-    <script src="https://meet.jit.si/external_api.js"></script>
+    <!-- Conectamos la librería al nuevo servidor libre -->
+    <script src="https://meet.waag.org/external_api.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
         #meet { width: 100%; height: 100vh; }
@@ -23,8 +24,8 @@
         if (!role || !room) {
             document.body.innerHTML = "<div class='error'><h2>Enlace no válido</h2><p>Faltan parámetros indispensables.</p></div>";
         } else {
-            // Servidor alternativo gratuito sin el bloqueo de los 5 minutos
-            const domain = 'meet.ffmuc.net'; 
+            // Servidor libre de restricciones de pantalla y tiempo
+            const domain = 'meet.waag.org'; 
             
             const options = {
                 roomName: room,
@@ -44,7 +45,7 @@
                 }
             };
 
-            // Configuración de herramientas según el rol asignado
+            // Configuración de controles por rol
             if (role === 'cliente') {
                 options.configOverwrite.toolbarButtons = ['microphone', 'camera', 'hangup', 'tileview'];
             } else if (role === 'chica') {
