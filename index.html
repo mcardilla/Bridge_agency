@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Videollamada Privada</title>
-    <!-- Probamos con la librería de Fairmeeting -->
-    <script src="https://fairmeeting.net/external_api.js"></script>
+    <title>Videollamada Privada - Control de Agencia</title>
+    <script src="https://meet.jit.si/external_api.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         #meet { width: 100%; height: 100vh; }
-        .error { color: white; text-align: center; padding-top: 20%; font-family: sans-serif; }
+        .error { color: white; text-align: center; padding-top: 30vh; }
     </style>
 </head>
 <body>
@@ -17,44 +16,58 @@
     <div id="meet"></div>
 
     <script>
+        // Este script lee automáticamente los datos del enlace
         const urlParams = new URLSearchParams(window.location.search);
-        const role = urlParams.get('role');
-        const room = urlParams.get('room');
+        const role = urlParams.get('role'); // Puede ser: cliente, chica o admin
+        const room = urlParams.get('room'); // Nombre único de la sala secreta
 
         if (!role || !room) {
-            document.body.innerHTML = "<div class='error'><h2>Enlace no válido</h2><p>Faltan parámetros indispensables.</p></div>";
+            document.body.innerHTML = "<div class='error'><h2>Error: Enlace Inválido</h2><p>Falta especificar el rol o la sala en el enlace.</p></div>";
         } else {
-            // Dominio a probar
-            const domain = 'meet.systemli.org'; 
-            
+            const domain = 'meet.jit.si';
+            let configOverwrite = {};
+
+            // Opciones estéticas para limpiar logos de la pantalla
+            let interfaceConfigOverwrite = {
+                SHOW_JITSI_WATERMARK: false,
+                SHOW_BRAND_WATERMARK: false,
+                SHOW_WATERMARK_FOR_GUESTS: false,
+                DEFAULT_LOGO_URL: ''
+            };
+
+            // REGLAS DE PRIVACIDAD EXTREMA SEGÚN EL ROL
+            if (role === 'cliente' || role === 'chica') {
+                configOverwrite = {
+                    toolbarButtons: ['camera', 'microphone', 'hangup'], // Solo botones básicos: cámara, micro y colgar
+                    disableChat: true,                      // Desactiva el chat por completo
+                    disableParticipantList: true,           // Oculta la lista de usuarios conectados
+                    disableTileView: true,                  // Bloquea el botón de ver mosaicos
+                    hideVideoMutedParticipants: true,       // ¡CLAVE! Te oculta a ti por completo si estás sin cámara
+                    hideConferenceSubject: true,            // Oculta el nombre de la sala arriba
+                    hideConferenceTimer: true,              // Oculta el reloj para evitar distracciones
+                    prejoinPageEnabled: false,              // Entran directo sin antesala
+                    disableInviteFunctions: true,           // Bloquea la opción de invitar a otros
+                    filmstrip: { disabled: true }           // Quita las miniaturas de las esquinas
+                };
+            } else if (role === 'admin') {
+                // CONFIGURACIÓN PARA TI (SUPERVISOR FANTASMA)
+                configOverwrite = {
+                    startWithAudioMuted: true,              // Entras mudo obligatoriamente
+                    startWithVideoMuted: true,              // Entras con cámara apagada obligatoriamente
+                    prejoinPageEnabled: false,
+                    toolbarButtons: ['camera', 'microphone', 'hangup', 'tileview'] // Tú sí puedes configurar tu pantalla
+                };
+            }
+
+            // Iniciar la videollamada en la pantalla
             const options = {
                 roomName: room,
                 width: '100%',
                 height: '100%',
                 parentNode: document.querySelector('#meet'),
-                interfaceConfigOverwrite: {
-                    SHOW_JITSI_WATERMARK: false,
-                    SHOW_BRAND_WATERMARK: false,
-                    SHOW_WATERMARK_FOR_GUESTS: false
-                },
-                configOverwrite: {
-                    prejoinPageEnabled: false,
-                    disableInviteFunctions: true
-                }
+                configOverwrite: configOverwrite,
+                interfaceConfigOverwrite: interfaceConfigOverwrite
             };
-
-            // Configuración de controles por rol
-            if (role === 'cliente') {
-                options.configOverwrite.toolbarButtons = ['microphone', 'camera', 'hangup', 'tileview'];
-            } else if (role === 'chica') {
-                options.configOverwrite.toolbarButtons = ['microphone', 'camera', 'hangup', 'chat', 'tileview'];
-            } else if (role === 'admin') {
-                // CÓDIGO DE INVISIBILIDAD TOTAL
-                options.configOverwrite.iAmRecorder = true; 
-                options.configOverwrite.startWithAudioMuted = true;
-                options.configOverwrite.startWithVideoMuted = true;
-                options.configOverwrite.toolbarButtons = ['hangup'];
-            }
 
             const api = new JitsiMeetExternalAPI(domain, options);
         }
