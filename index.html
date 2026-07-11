@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirección de Videollamada</title>
+    <title>Videollamada Privada</title>
+    <!-- 1. CAMBIO AQUÍ: La librería del servidor que estás probando -->
+    <script src="https://fairmeeting.net/external_api.js"></script>
     <style>
-        body { background-color: #000; color: #fff; font-family: sans-serif; text-align: center; padding-top: 20%; }
-        .loading { font-size: 1.2rem; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
+        #meet { width: 100%; height: 100vh; }
+        .error { color: white; text-align: center; padding-top: 20%; font-family: sans-serif; }
     </style>
 </head>
 <body>
-    <div id="msg" class="loading">Conectando a la sala privada de forma segura...</div>
+
+    <div id="meet"></div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
@@ -18,28 +22,39 @@
         const room = urlParams.get('room');
 
         if (!role || !room) {
-            document.getElementById('msg').innerHTML = "<h2>Enlace no válido</h2><p>Faltan parámetros indispensables.</p>";
+            document.body.innerHTML = "<div class='error'><h2>Enlace no válido</h2><p>Faltan parámetros indispensables.</p></div>";
         } else {
-            // Volvemos al servidor principal estable, sin límites de tiempo por redirección
-            const baseUrl = `https://meet.jit.si/${room}`;
+            // 2. CAMBIO AQUÍ: El dominio del servidor que estás probando
+            const domain = 'fairmeeting.net'; 
             
-            // Configuraciones de Jitsi inyectadas directamente en la URL
-            let hashConfig = "#config.prejoinPageEnabled=false&config.disableInviteFunctions=true";
+            const options = {
+                roomName: room,
+                width: '100%',
+                height: '100%',
+                parentNode: document.querySelector('#meet'),
+                interfaceConfigOverwrite: {
+                    SHOW_JITSI_WATERMARK: false,
+                    SHOW_BRAND_WATERMARK: false,
+                    SHOW_WATERMARK_FOR_GUESTS: false
+                },
+                configOverwrite: {
+                    prejoinPageEnabled: false,
+                    startWithAudioMuted: (role === 'admin'),
+                    startWithVideoMuted: (role === 'admin'),
+                    disableInviteFunctions: true
+                }
+            };
 
+            // Configuración de controles por rol
             if (role === 'cliente') {
-                // Cliente: Sin botón de chat
-                hashConfig += '&config.toolbarButtons=["microphone","camera","hangup","tileview"]';
+                options.configOverwrite.toolbarButtons = ['microphone', 'camera', 'hangup', 'tileview'];
             } else if (role === 'chica') {
-                // Chica: Con chat habilitado
-                hashConfig += '&config.toolbarButtons=["microphone","camera","hangup","chat","tileview"]';
+                options.configOverwrite.toolbarButtons = ['microphone', 'camera', 'hangup', 'chat', 'tileview'];
             } else if (role === 'admin') {
-                // Administrador: Entra oculto (micrófono y cámara apagados al inicio)
-                hashConfig += '&config.startWithAudioMuted=true&config.startWithVideoMuted=true';
-                hashConfig += '&config.toolbarButtons=["microphone","camera","hangup","chat","tileview","mute-everyone"]';
+                options.configOverwrite.toolbarButtons = ['microphone', 'camera', 'hangup', 'chat', 'tileview', 'mute-everyone'];
             }
 
-            // Redirección inmediata automática
-            window.location.href = baseUrl + hashConfig;
+            const api = new JitsiMeetExternalAPI(domain, options);
         }
     </script>
 </body>
